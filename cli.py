@@ -8536,6 +8536,26 @@ class HermesCLI:
             print(f"  ❌ Skills reload failed: {e}")
 
     # ====================================================================
+    # Skin-aware tool text color helper
+    # ====================================================================
+
+    @staticmethod
+    def _skin_tool_text(text: str) -> str:
+        """Wrap *text* with the active skin's ``tool_exec`` ANSI color, if set.
+        Returns the text unchanged when the skin has no ``tool_exec`` color.
+        """
+        try:
+            from hermes_cli.skin_engine import get_active_skin
+            skin = get_active_skin()
+            tool_color = skin.get_color("tool_exec", "")
+            if tool_color and len(tool_color) == 7:
+                r, g, b = int(tool_color[1:3], 16), int(tool_color[3:5], 16), int(tool_color[5:7], 16)
+                return f"\033[38;2;{r};{g};{b}m{text}\033[0m"
+        except Exception:
+            pass
+        return text
+
+    # ====================================================================
     # Tool-call generation indicator (shown during streaming)
     # ====================================================================
 
@@ -8553,7 +8573,7 @@ class HermesCLI:
 
         from agent.display import get_tool_emoji
         emoji = get_tool_emoji(tool_name, default="⚡")
-        _cprint(f"  ┊ {emoji} preparing {tool_name}…")
+        _cprint(self._skin_tool_text(f"  ┊ {emoji} preparing {tool_name}…"))
 
     # ====================================================================
     # Tool progress callback (audio cues for voice mode)
@@ -8595,7 +8615,7 @@ class HermesCLI:
                     line = get_cute_tool_message(function_name, stored_args, duration)
                     if is_error:
                         line = f"{line} [error]"
-                    _cprint(f"  {line}")
+                    _cprint(self._skin_tool_text(f"  {line}"))
                 except Exception:
                     pass
                 # First-touch onboarding: on the first tool in this process
